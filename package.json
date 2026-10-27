@@ -48,7 +48,7 @@
     "lint-staged": "17.6.0",
     "msw": "3.0.3",
     "prettier": "3.9.10",
-    "secretlint": "13.0.7",
+    "secretlint": "13.1.0",
     "smol-toml": "1.9.1",
     "supabase": "2.122.0",
     "tailwindcss": "4.3.3",
