@@ -1,0 +1,14 @@
+# Review ownership of the security-critical paths. Replace the placeholder
+# handle with the real owner before the repository is published.
+/src/composition/ @REPLACE-WITH-OWNER-HANDLE
+/src/infrastructure/ @REPLACE-WITH-OWNER-HANDLE
+/.github/ @REPLACE-WITH-OWNER-HANDLE
+/pnpm-workspace.yaml @REPLACE-WITH-OWNER-HANDLE
+/eslint.config.mjs @REPLACE-WITH-OWNER-HANDLE
+/supabase/ @REPLACE-WITH-OWNER-HANDLE
+/.husky/ @REPLACE-WITH-OWNER-HANDLE
+/scripts/ @REPLACE-WITH-OWNER-HANDLE
+/package.json @REPLACE-WITH-OWNER-HANDLE
+/pnpm-lock.yaml @REPLACE-WITH-OWNER-HANDLE
+/.secretlintrc.json @REPLACE-WITH-OWNER-HANDLE
+/commitlint.config.mjs @REPLACE-WITH-OWNER-HANDLE

@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # Whether Dependabot honors the pnpm minimumReleaseAge is unverified, so a
+    # one-day delay is requested explicitly (the pnpm default is 1440 minutes).
+    cooldown:
+      default-days: 1
+    # Dependabot appends the colon; the prefix keeps its commits valid for
+    # commitlint.
+    commit-message:
+      prefix: 'chore(deps)'
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 1
+    commit-message:
+      prefix: 'ci(deps)'

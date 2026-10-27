@@ -1,0 +1,7 @@
+# Before the first commit lint-staged cannot back up the working tree, and it
+# overwrites unstaged edits of staged files when a task fails. Refuse instead.
+if ! git rev-parse --verify -q HEAD >/dev/null && ! git diff --quiet; then
+  echo "pre-commit: stage or stash your unstaged edits before the first commit." >&2
+  exit 1
+fi
+lint-staged --concurrent false

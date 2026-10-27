@@ -1,0 +1,17 @@
+# Local issue tracker (not versioned)
+.scratch/
+
+# Environment files: everything except the example (SPEC §9.3)
+.env*
+!.env.example
+
+# Browser automation output (Playwright MCP)
+.playwright-mcp/
+
+# Dependencies and build output
+node_modules/
+.next/
+coverage/
+out/
+next-env.d.ts
+*.tsbuildinfo

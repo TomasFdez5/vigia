@@ -1,0 +1,167 @@
+@import 'tailwindcss';
+
+/*
+ * Theme tokens. Light is the default, the system dark preference applies
+ * unless .light is set, and .dark forces dark. No theme switcher exists yet.
+ */
+:root {
+  color-scheme: light;
+  --canvas: #fafafa;
+  --surface: #ffffff;
+  --border-subtle: #ebebeb;
+  --border: #d4d4d4;
+  --border-input: #8f8f8f;
+  --text: #171717;
+  --text-secondary: #666666;
+  --accent: #0077b3;
+  --on-accent: #ffffff;
+  --focus: #0077b3;
+  --ok: #176f2f;
+  --ok-bg: #e6f4ea;
+  --warn: #8a5d00;
+  --warn-bg: #fff4d6;
+  --err: #d1242f;
+  --err-bg: #fdecee;
+  --unknown: #5f6368;
+  --unknown-bg: #f0f0f0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+    --canvas: #0a0a0a;
+    --surface: #111111;
+    --border-subtle: #242424;
+    --border: #2e2e2e;
+    --border-input: #6b6b6b;
+    --text: #ededed;
+    --text-secondary: #a1a1a1;
+    --accent: #88cff7;
+    --on-accent: #00263a;
+    --focus: #88cff7;
+    --ok: #3fb950;
+    --ok-bg: #11261a;
+    --warn: #e3b341;
+    --warn-bg: #2b2210;
+    --err: #ff7b72;
+    --err-bg: #2d1618;
+    --unknown: #a1a1a1;
+    --unknown-bg: #1f1f1f;
+  }
+}
+
+.dark {
+  color-scheme: dark;
+  --canvas: #0a0a0a;
+  --surface: #111111;
+  --border-subtle: #242424;
+  --border: #2e2e2e;
+  --border-input: #6b6b6b;
+  --text: #ededed;
+  --text-secondary: #a1a1a1;
+  --accent: #88cff7;
+  --on-accent: #00263a;
+  --focus: #88cff7;
+  --ok: #3fb950;
+  --ok-bg: #11261a;
+  --warn: #e3b341;
+  --warn-bg: #2b2210;
+  --err: #ff7b72;
+  --err-bg: #2d1618;
+  --unknown: #a1a1a1;
+  --unknown-bg: #1f1f1f;
+}
+
+/*
+ * Tailwind's default palette, type sizes, radii, shadows, blurs, tracking,
+ * leading, serif family and font weights are cleared so that only the design
+ * tokens below can be used. Animations, easing, aspect ratios and container
+ * widths are kept on purpose: the loading indicator spins and the content
+ * width is capped.
+ */
+@theme {
+  --color-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+  --blur-*: initial;
+  --backdrop-blur-*: initial;
+  --tracking-*: initial;
+  --leading-*: initial;
+  --font-serif: initial;
+  --font-weight-*: initial;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-border-subtle: var(--border-subtle);
+  --color-border: var(--border);
+  --color-border-input: var(--border-input);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-focus: var(--focus);
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-err: var(--err);
+  --color-err-bg: var(--err-bg);
+  --color-unknown: var(--unknown);
+  --color-unknown-bg: var(--unknown-bg);
+}
+
+/*
+ * next/font registers each Geist family under a generated name and exposes it
+ * through one variable per family (see geist.ts); the fallbacks are the
+ * system font stacks.
+ */
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@theme {
+  --text-page-title: 24px;
+  --text-page-title--line-height: 32px;
+  --text-page-title--font-weight: 600;
+  --text-page-title--letter-spacing: -0.02em;
+  --text-section: 16px;
+  --text-section--line-height: 24px;
+  --text-section--font-weight: 600;
+  --text-body: 14px;
+  --text-body--line-height: 20px;
+  --text-body--font-weight: 400;
+  --text-label: 13px;
+  --text-label--line-height: 16px;
+  --text-label--font-weight: 500;
+  --text-metadata: 12px;
+  --text-metadata--line-height: 16px;
+  --text-metadata--font-weight: 400;
+  --text-metric: 24px;
+  --text-metric--line-height: 28px;
+  --text-metric--font-weight: 600;
+
+  --spacing: 4px;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-full: 9999px;
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--text);
+  }
+}

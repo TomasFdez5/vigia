@@ -1,0 +1,7 @@
+pmOnFail: error
+engineStrict: true
+strictDepBuilds: true
+allowBuilds:
+  # Reviewed, not needed: its native binding ships as a per-platform optional
+  # dependency; the install script is only a fallback.
+  unrs-resolver: false
