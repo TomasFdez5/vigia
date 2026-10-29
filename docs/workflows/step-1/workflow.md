@@ -44,7 +44,7 @@ Casos de uso, puertos y fakes en memoria (Paso 2); la sonda HTTP, los adaptadore
 - El semáforo se calcula entero en el dominio y la interfaz solo lo pinta; los nombres de sus valores se fijan en la Fase A.
 - La obsolescencia se mide desde el momento en que se observó el dato (check o sincronización), no desde la fecha del despliegue o de la alerta.
 - No hay dependencias nuevas en ningún ticket.
-- No hay ticket 07: la Fase A decidió no reconsiderar `exactOptionalPropertyTypes`.
+- No hay ticket para `exactOptionalPropertyTypes`: la Fase A decidió no reconsiderarlo. Los tickets 07 a 09 son posteriores a la Fase G y salen de la revisión de arquitectura (ver «Tickets posteriores a la Fase G»).
 
 **Decisiones abiertas que afectan al paso**
 
@@ -137,16 +137,26 @@ Start from this proposed breakdown and show me the numbered list, asking about g
 
 **Desglose acordado**
 
-| #   | Ticket (fichero)                    | Tipo               | Bloqueado por | Se verifica con                                                                                                                                                        | Skills                                                        |
-| --- | ----------------------------------- | ------------------ | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| 01  | `01-result-and-closed-error-codes`  | horizontal         | ninguno       | Seams 0 y 8: `Result` con valores falsy; mutación: la cobertura por fichero falla si falta un test o hay una rama sin cubrir (fichero solo de tipos, barril, `switch` sin `default`) | `tdd`, `domain-modeling`, `codebase-design`                   |
-| 02  | `02-health-classification`          | vertical (dominio) | 01            | Seams 1 y 2: los 6 casos de salud, la frontera de 2000 ms, 499/500 y 5xx esperado que sigue `down`; el parser falla cerrado                                            | `tdd`, `domain-modeling`, `codebase-design`                   |
-| 03  | `03-severity-and-closed-signal-types` | vertical (dominio) | 01          | Seam 3: orden correcto; gravedad desconocida, vacía, en otra capitalización o heredada → `high`                                                                        | `tdd`, `domain-modeling`, `security-check`                    |
-| 04  | `04-data-staleness`                 | vertical (dominio) | 01            | Seam 5: frontera exacta de 3×, dato ausente, fecha futura o inválida → obsoleto                                                                                        | `tdd`, `domain-modeling`                                      |
-| 05  | `05-uptime-availability`            | vertical (dominio) | 01            | Seam 6: frontera del 50 %, `degraded` cuenta, ventana vacía o no positiva, más checks que los esperados                                                                | `tdd`, `domain-modeling`                                      |
-| 06  | `06-project-status-verdict`         | vertical (dominio) | 02, 03, 04    | Seam 7: cada regla y cada precedencia; nunca `operational` con datos obsoletos, ausentes o desconocidos                                                                | `tdd`, `domain-modeling`, `codebase-design`, `security-check` |
+| #   | Ticket (fichero)                      | Tipo               | Bloqueado por | Se verifica con                                                                                                                                                                      | Skills                                                        |
+| --- | ------------------------------------- | ------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| 01  | `01-result-and-closed-error-codes`    | horizontal         | ninguno       | Seams 0 y 8: `Result` con valores falsy; mutación: la cobertura por fichero falla si falta un test o hay una rama sin cubrir (fichero solo de tipos, barril, `switch` sin `default`) | `tdd`, `domain-modeling`, `codebase-design`                   |
+| 02  | `02-health-classification`            | vertical (dominio) | 01            | Seams 1 y 2: los 6 casos de salud, la frontera de 2000 ms, 499/500 y 5xx esperado que sigue `down`; el parser falla cerrado                                                          | `tdd`, `domain-modeling`, `codebase-design`                   |
+| 03  | `03-severity-and-closed-signal-types` | vertical (dominio) | 01            | Seam 3: orden correcto; gravedad desconocida, vacía, en otra capitalización o heredada → `high`                                                                                      | `tdd`, `domain-modeling`, `security-check`                    |
+| 04  | `04-data-staleness`                   | vertical (dominio) | 01            | Seam 5: frontera exacta de 3×, dato ausente, fecha futura o inválida → obsoleto                                                                                                      | `tdd`, `domain-modeling`                                      |
+| 05  | `05-uptime-availability`              | vertical (dominio) | 01            | Seam 6: frontera del 50 %, `degraded` cuenta, ventana vacía o no positiva, más checks que los esperados                                                                              | `tdd`, `domain-modeling`                                      |
+| 06  | `06-project-status-verdict`           | vertical (dominio) | 02, 03, 04    | Seam 7: cada regla y cada precedencia; nunca `operational` con datos obsoletos, ausentes o desconocidos                                                                              | `tdd`, `domain-modeling`, `codebase-design`, `security-check` |
 
 Grafo: 01 → {02, 03, 04, 05}; {02, 03, 04} → 06; el 05 no desbloquea nada dentro del paso (lo consume el Paso 2). Sin ciclos. El orden de ejecución propuesto es 01, 02, 03, 04, 05, 06; tras el 01, los tickets 02 a 05 pueden ir en cualquier orden.
+
+**Tickets posteriores a la Fase G.** La revisión de arquitectura del cierre abrió tres tickets pequeños dentro de `src/domain`, todos tras el 06:
+
+| #   | Ticket (fichero)                       | Qué cambia                                                                                                    |
+| --- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 07  | `07-severity-single-definition`        | Una sola lista ordenada de gravedades de la que derivan el tipo, la comparación y la conversión (sin `switch`) |
+| 08  | `08-compare-severity-fail-safe`        | `compareSeverity` trata un valor fuera del tipo como `high`, igual que la conversión                          |
+| 09  | `09-verdict-signal-freshness`          | El veredicto calcula la caducidad de cada señal una vez antes de aplicar las reglas                           |
+
+El 07 y el 08 son sensibles (integridad: rutas que fallan abiertas) y llevan `/security-check`. No tienen bloques de prompts en este documento: se ejecutaron con el mismo flujo (implementar, revisar, cerrar) y su evidencia está en `## Comments` de cada ticket.
 
 **Por qué hay un ticket horizontal.** El 01 es un cimiento: tipos compartidos y la comprobación de que la cobertura por fichero muerde sobre código real, incluido el patrón de `switch` sin `default`. Los demás son cortes verticales dentro del dominio: no hay base de datos ni UI que atravesar en este paso, así que «vertical» significa que cada ticket entrega una regla completa, probada por su interfaz pública. No hay ticket 07: la Fase A decidió no reconsiderar `exactOptionalPropertyTypes`.
 
@@ -179,7 +189,7 @@ Una **sesión nueva por ticket** (`/clear` antes de pegar), en orden de dependen
 - Las reglas de calidad de tests van copiadas en cada prompt de implementación y cada seam nombra el riesgo que protege.
 - **Regla del commit base:** `/code-review` necesita un punto fijo. El único dato que rellenas a mano es `<BASELINE_SHA>`, el SHA del commit anterior al ticket (`git log --oneline`). Para el ticket 01 es `2ae73c3`. Los commits los pide el agente y los confirmas tú; haz uno por ticket para que el siguiente tenga punto fijo.
 - Cierre de cada ticket: `Status: done`, criterios marcados y notas en `## Comments` del fichero del ticket.
-- Orden propuesto: 01 → 02 → 03 → 04 → 05 → 06. Tras el 01, los tickets 02, 03, 04 y 05 pueden ir en cualquier orden; el 06 va el último. No hay ticket 07: la Fase A decidió no reconsiderar `exactOptionalPropertyTypes`. El estado real de cada ticket es el campo `Status` de su fichero.
+- Orden propuesto: 01 → 02 → 03 → 04 → 05 → 06. Tras el 01, los tickets 02, 03, 04 y 05 pueden ir en cualquier orden; el 06 va el último. Los tickets 07 a 09 son posteriores a la Fase G. No hay ticket para `exactOptionalPropertyTypes`: la Fase A decidió no reconsiderarlo. El estado real de cada ticket es el campo `Status` de su fichero.
 
 ---
 
@@ -651,7 +661,7 @@ Next session: close Step 1 with the Phase G prompts of the workflow (verificatio
 
 ---
 
-No hay ticket 07: la Fase A decidió no reconsiderar `exactOptionalPropertyTypes`. El dominio evita propiedades opcionales y usa `T | null` explícito; la opción se reabre cuando aparezca fricción real con librerías, en el Paso 2 o 3.
+No hay ticket para `exactOptionalPropertyTypes`: la Fase A decidió no reconsiderarlo (los tickets 07 a 09 son posteriores a la Fase G y no tienen relación con esa opción). El dominio evita propiedades opcionales y usa `T | null` explícito; la opción se reabre cuando aparezca fricción real con librerías, en el Paso 2 o 3.
 
 ---
 
@@ -690,7 +700,7 @@ Focus on what Step 1 touched: src/shared and src/domain: module depth, the seams
 | Momento          | Comando                                                                  | Resultado                                   |
 | ---------------- | ------------------------------------------------------------------------ | ------------------------------------------- |
 | Antes de empezar | Fase 0: `Status` del Paso 0, mirar la CI                                 | punto fijo `2ae73c3`                        |
-| Decidir          | `/grill-with-docs`                                                       | decisiones, glosario, ADR 0002    |
+| Decidir          | `/grill-with-docs`                                                       | decisiones, glosario, ADR 0002              |
 | Escribir         | `/to-spec`                                                               | `.scratch/step-1-business-rules/spec.md`    |
 | Trocear          | `/to-tickets`                                                            | `.scratch/step-1-business-rules/issues/01…` |
 | Sincronizar      | prompt de la Fase C bis                                                  | workflow alineado con los tickets           |

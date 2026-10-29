@@ -4,9 +4,8 @@ import {
   DEFAULT_STALENESS_MULTIPLIER,
   DEFAULT_VULNERABILITY_SYNC_FREQUENCY_MS,
   isStale,
-} from '../freshness/isStale';
-import { compareSeverity } from '../vulnerability/compareSeverity';
-
+} from '@/domain/freshness/isStale';
+import { compareSeverity } from '@/domain/vulnerability/compareSeverity';
 import type { Severity } from '@/domain/vulnerability/Severity';
 
 import type {
@@ -32,13 +31,44 @@ const DEFAULT_VERDICT_THRESHOLDS: VerdictThresholds = {
   stalenessMultiplier: DEFAULT_STALENESS_MULTIPLIER,
 };
 
+/** Whether each signal is stale; a missing signal counts as stale. */
+interface SignalFreshness {
+  readonly healthStale: boolean;
+  readonly deploymentStale: boolean;
+  readonly vulnerabilitiesStale: boolean;
+}
+
 interface RuleInput {
   readonly signals: ProjectSignals;
-  readonly now: Date;
-  readonly thresholds: VerdictThresholds;
+  readonly freshness: SignalFreshness;
 }
 
 type Rule<R> = (input: RuleInput) => R | null;
+
+/** Computes the staleness of each signal once, each with its own frequency. */
+const computeFreshness = (
+  signals: ProjectSignals,
+  now: Date,
+  thresholds: VerdictThresholds,
+): SignalFreshness => {
+  const stale = (observedAt: Date | null, frequencyMs: number): boolean =>
+    isStale(observedAt, now, frequencyMs, thresholds.stalenessMultiplier);
+
+  return {
+    healthStale: stale(
+      signals.health?.observedAt ?? null,
+      thresholds.healthCheckFrequencyMs,
+    ),
+    deploymentStale: stale(
+      signals.deployment?.observedAt ?? null,
+      thresholds.deploymentSyncFrequencyMs,
+    ),
+    vulnerabilitiesStale: stale(
+      signals.vulnerabilities?.observedAt ?? null,
+      thresholds.vulnerabilitySyncFrequencyMs,
+    ),
+  };
+};
 
 /** Tells whether an open alert of exactly the given severity exists. */
 const hasOpenAlert = (input: RuleInput, severity: Severity): boolean =>
@@ -70,36 +100,22 @@ const DEGRADED_RULES: readonly Rule<DegradedReason>[] = [
 ];
 
 const NO_RECENT_DATA_RULES: readonly Rule<NoRecentDataReason>[] = [
-  ({ signals, now, thresholds }) => {
+  ({ signals, freshness }) => {
     if (signals.health === null) {
       return { code: 'health_missing' };
     }
-    return isStale(
-      signals.health.observedAt,
-      now,
-      thresholds.healthCheckFrequencyMs,
-      thresholds.stalenessMultiplier,
-    )
-      ? { code: 'health_stale' }
-      : null;
+    return freshness.healthStale ? { code: 'health_stale' } : null;
   },
-  ({ signals, now, thresholds }) => {
+  ({ signals, freshness }) => {
     if (signals.deployment === null) {
       return { code: 'deployment_missing' };
     }
     if (signals.deployment.status === 'unknown') {
       return { code: 'deployment_unknown' };
     }
-    return isStale(
-      signals.deployment.observedAt,
-      now,
-      thresholds.deploymentSyncFrequencyMs,
-      thresholds.stalenessMultiplier,
-    )
-      ? { code: 'deployment_stale' }
-      : null;
+    return freshness.deploymentStale ? { code: 'deployment_stale' } : null;
   },
-  ({ signals, now, thresholds }) => {
+  ({ signals, freshness }) => {
     const sync = signals.vulnerabilities;
     if (sync === null) {
       return { code: 'vulnerability_sync_missing' };
@@ -113,12 +129,7 @@ const NO_RECENT_DATA_RULES: readonly Rule<NoRecentDataReason>[] = [
           syncStatus: sync.syncStatus,
         };
       case 'ok':
-        return isStale(
-          sync.observedAt,
-          now,
-          thresholds.vulnerabilitySyncFrequencyMs,
-          thresholds.stalenessMultiplier,
-        )
+        return freshness.vulnerabilitiesStale
           ? { code: 'vulnerability_sync_stale' }
           : null;
     }
@@ -147,7 +158,10 @@ export const computeProjectVerdict = (
   now: Date,
   thresholds: VerdictThresholds = DEFAULT_VERDICT_THRESHOLDS,
 ): ProjectVerdict => {
-  const input: RuleInput = { signals, now, thresholds };
+  const input: RuleInput = {
+    signals,
+    freshness: computeFreshness(signals, now, thresholds),
+  };
 
   const [down, ...moreDown] = collect(DOWN_RULES, input);
   if (down !== undefined) {

@@ -1,5 +1,5 @@
-import { err, ok } from '../../shared/Result';
-import type { Result } from '../../shared/Result';
+import { err, ok } from '@/shared/Result';
+import type { Result } from '@/shared/Result';
 
 import type { ExpectedStatus, StatusRange } from './ExpectedStatus';
 

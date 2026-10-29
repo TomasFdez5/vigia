@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { err, ok } from '../../shared/Result';
+import { err, ok } from '@/shared/Result';
 
 import { parseExpectedStatus } from './parseExpectedStatus';
 

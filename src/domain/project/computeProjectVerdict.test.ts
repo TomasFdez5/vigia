@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import type { Severity } from '@/domain/vulnerability/Severity';
+
 import { computeProjectVerdict } from './computeProjectVerdict';
 import type { ProjectSignals } from './ProjectSignals';
 
@@ -317,22 +319,110 @@ describe('computeProjectVerdict', () => {
     expect(verdict).toStrictEqual({ kind: 'operational', reasons: [] });
   });
 
-  it('honours the thresholds passed as a parameter', () => {
-    const signals = healthy({ health: health('up', 4 * MINUTE_MS) });
-    const thresholds = {
-      healthCheckFrequencyMs: MINUTE_MS,
+  it('counts an open alert with an unrecognized severity as high', () => {
+    const verdict = computeProjectVerdict(
+      healthy({
+        vulnerabilities: {
+          syncStatus: 'ok',
+          openSeverities: ['bogus' as Severity],
+          observedAt: ago(MINUTE_MS),
+        },
+      }),
+      NOW,
+    );
+
+    expect(verdict).toStrictEqual({
+      kind: 'degraded',
+      reasons: [{ code: 'high_vulnerability' }],
+    });
+  });
+
+  describe('thresholds passed as a parameter', () => {
+    // Same values as the defaults: 5 min, 15 min, 24 h, multiplier 3.
+    const BASE_THRESHOLDS = {
+      healthCheckFrequencyMs: 5 * MINUTE_MS,
       deploymentSyncFrequencyMs: 15 * MINUTE_MS,
       vulnerabilitySyncFrequencyMs: 24 * HOUR_MS,
       stalenessMultiplier: 3,
     };
 
-    expect(computeProjectVerdict(signals, NOW)).toStrictEqual({
-      kind: 'operational',
-      reasons: [],
+    it('treats data as stale under a stricter health frequency', () => {
+      // 4 min old: fresh by default (limit 3 x 5 = 15 min), stale at 1 min (limit 3 min).
+      const signals = healthy({ health: health('up', 4 * MINUTE_MS) });
+      const strict = { ...BASE_THRESHOLDS, healthCheckFrequencyMs: MINUTE_MS };
+
+      expect(computeProjectVerdict(signals, NOW)).toStrictEqual({
+        kind: 'operational',
+        reasons: [],
+      });
+      expect(computeProjectVerdict(signals, NOW, strict)).toStrictEqual({
+        kind: 'no_recent_data',
+        reasons: [{ code: 'health_stale' }],
+      });
     });
-    expect(computeProjectVerdict(signals, NOW, thresholds)).toStrictEqual({
-      kind: 'no_recent_data',
-      reasons: [{ code: 'health_stale' }],
+
+    it.each([
+      {
+        name: 'health frequency',
+        // 40 min old: default limit 3 x 5 = 15 min, custom 3 x 15 = 45 min.
+        signals: healthy({ health: health('up', 40 * MINUTE_MS) }),
+        custom: { ...BASE_THRESHOLDS, healthCheckFrequencyMs: 15 * MINUTE_MS },
+        code: 'health_stale',
+      },
+      {
+        name: 'deployment frequency',
+        // 100 min old: default limit 3 x 15 = 45 min, custom 3 x 60 = 180 min.
+        signals: healthy({ deployment: deployment('ready', 100 * MINUTE_MS) }),
+        custom: {
+          ...BASE_THRESHOLDS,
+          deploymentSyncFrequencyMs: 60 * MINUTE_MS,
+        },
+        code: 'deployment_stale',
+      },
+      {
+        name: 'vulnerability frequency',
+        // 4 days old: default limit 3 x 24 = 72 h, custom 3 x 48 = 144 h.
+        signals: healthy({
+          vulnerabilities: vulnerabilities('ok', [], 4 * 24 * HOUR_MS),
+        }),
+        custom: {
+          ...BASE_THRESHOLDS,
+          vulnerabilitySyncFrequencyMs: 48 * HOUR_MS,
+        },
+        code: 'vulnerability_sync_stale',
+      },
+      {
+        name: 'multiplier for health',
+        // 20 min old: default limit 3 x 5 = 15 min, custom 5 x 5 = 25 min.
+        signals: healthy({ health: health('up', 20 * MINUTE_MS) }),
+        custom: { ...BASE_THRESHOLDS, stalenessMultiplier: 5 },
+        code: 'health_stale',
+      },
+      {
+        name: 'multiplier for deployment',
+        // 60 min old: default limit 3 x 15 = 45 min, custom 5 x 15 = 75 min.
+        signals: healthy({ deployment: deployment('ready', 60 * MINUTE_MS) }),
+        custom: { ...BASE_THRESHOLDS, stalenessMultiplier: 5 },
+        code: 'deployment_stale',
+      },
+      {
+        name: 'multiplier for vulnerabilities',
+        // 4 days old: default limit 3 x 24 = 72 h, custom 5 x 24 = 120 h.
+        signals: healthy({
+          vulnerabilities: vulnerabilities('ok', [], 4 * 24 * HOUR_MS),
+        }),
+        custom: { ...BASE_THRESHOLDS, stalenessMultiplier: 5 },
+        code: 'vulnerability_sync_stale',
+      },
+    ])('honours the $name', ({ signals, custom, code }) => {
+      expect(computeProjectVerdict(signals, NOW)).toStrictEqual({
+        kind: 'no_recent_data',
+        reasons: [{ code }],
+      });
+      expect(computeProjectVerdict(signals, NOW, custom)).toStrictEqual({
+        kind: 'operational',
+        reasons: [],
+      });
     });
   });
 

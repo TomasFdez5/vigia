@@ -87,10 +87,12 @@ Ver ADR 0001: la presentación solo llega a la infraestructura a través del con
 src/
 ├── shared/               Result.ts (utilidades genéricas sin dependencias ni conceptos de negocio)
 ├── domain/
-│   ├── project/          Project.ts
-│   ├── health/           HealthCheck.ts, HealthStatus.ts
+│   ├── errors/           códigos de error cerrados (sonda y hosting)
+│   ├── freshness/        regla de datos obsoletos
+│   ├── project/          Project.ts, veredicto del proyecto y sus señales
+│   ├── health/           HealthCheck.ts, HealthStatus.ts, clasificación, disponibilidad y parser de estados esperados
 │   ├── deployment/       Deployment.ts, DeploymentStatus.ts (estados normalizados)
-│   └── vulnerability/    Vulnerability.ts, Severity.ts
+│   └── vulnerability/    Vulnerability.ts, Severity.ts (orden y conversión), VulnerabilitySyncStatus.ts
 ├── application/
 │   ├── ports/            ProjectRepository, HealthCheckRepository,
 │   │                     DeploymentRepository, VulnerabilityRepository,

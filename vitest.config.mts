@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { defineConfig } from 'vitest/config';
 
 // Each glob needs its own perFile: globs do not inherit the top-level one.
@@ -10,6 +12,10 @@ const strict = {
 };
 
 export default defineConfig({
+  resolve: {
+    // Mirrors the `@/*` path in tsconfig.json so runtime imports resolve.
+    alias: { '@': path.resolve(import.meta.dirname, 'src') },
+  },
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}', 'tests/**/*.test.{ts,tsx}'],
